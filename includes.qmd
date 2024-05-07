@@ -1,0 +1,158 @@
+---
+pagetitle: Includes
+---
+
+# Includes {#includes.section}
+
+# Stan 文件的包含
+
+本节译者：李泓玮
+
+Stan allows one file to be included within another file using a syntax
+similar to that from C++.  For example, suppose the file
+`my-std-normal.stan` defines the standard normal log probability
+density function (up to an additive constant).
+
+Stan 允许一个文件包含在另一个文件中，使用的语法与 C++ 类似。例如，假设文件 `my-std-normal.stan` 定义了标准正态对数概率密度函数（忽略常数项）。
+
+``` stan
+functions {
+  real my_std_normal_lpdf(vector y) {
+    return -0.5 * y' * y;
+  }
+}
+```
+
+Suppose we also have a file containing a Stan program with an include statement.
+
+假设我们还有一个文件，凭借 include 语句包含 Stan 程序。
+
+``` stan
+#include my-std-normal.stan
+parameters {
+  real y;
+}
+model {
+  y ~ my_std_normal();
+}
+```
+
+This Stan program behaves as if the contents of the file
+`my-std-normal.stan` replace the line with the `#include`
+statement, behaving as if a single Stan program were provided.
+
+在这个 Stan 程序中，`#include` 语句这一行可以替换为文件 `my-std-normal.stan` 的内容，也就是说这一行相当于一个单独的 Stan 程序。
+
+``` stan
+functions {
+  real my_std_normal_lpdf(vector y) {
+    return -0.5 * y' * y;
+  }
+}
+parameters {
+  real y;
+}
+model {
+  y ~ my_std_normal();
+}
+```
+
+There are no restrictions on where include statements may be placed
+within a file or what the contents are of the replaced file.
+
+对于 include 语句在文件中的位置以及具体包含什么文件，没有限制。
+
+### Space before includes {-}
+
+### include 语句前的空格 {-}
+
+It is possible to use includes on a line non-initially.  For example,
+the previous example could've included space before the `#` in the
+include line:
+
+include 语句所在行，可以不顶格书写。例如，在前面的例子中， `#` 前面可以有空格：
+
+``` stan
+    #include my-std-normal.stan
+parameters {
+// ...
+```
+
+If there is initial space before an include, it will be discarded.
+
+如果 include 前存在空格，这些空格将被忽略。
+
+### Comments after includes {-}
+
+### include 语句后的注释 {-}
+
+It is also possible to include line-based comments after the include.
+For example, the previous example can be coded as:
+
+也可以在 include 之后添加对该行的注释。例如，前面的例子可以写成：
+
+``` stan
+#include my-std-normal.stan  // definition of standard normal
+parameters {
+// ...
+```
+
+Line comments are discarded when the entire line is replaced with the
+contents of the included file.
+
+如果 include 这一行都替换为相关文件的内容，就不再需要行注释。
+
+## Recursive includes
+
+## 递归的 include
+
+Recursive includes will be ignored. For example, suppose
+`a.stan` contains
+
+递归的 include 将导致编译器错误。例如，假设 `a.stan` 中有
+
+``` stan
+#include b.stan
+```
+
+and `b.stan` contains
+
+而 `b.stan` 中有
+
+``` stan
+#include a.stan
+```
+
+This will result in an error explaining the circular dependency:
+
+这将导致一个解释循环依赖的报错：
+
+``` stan
+Syntax error in './b.stan', line 1, column 0, included from
+'./a.stan', line 1, column 0, included from
+'./b.stan', line 1, column 0, included from
+'a.stan', line 1, column 0, include error:
+   -------------------------------------------------
+     1:  #include a.stan
+         ^
+   -------------------------------------------------
+
+File a.stan recursively included itself.
+```
+
+## Include paths
+
+## include 的路径
+
+The Stan interfaces may provide a mechanism for specifying a sequence of system paths in which to search for include files. The file included is the first one that is found in the sequence.
+
+Stan 接口可以提供一种机制，用于指定搜索包含文件的系统路径序列。包含的文件是在序列中找到的第一个文件。
+
+### Slashes in include paths {-}
+
+### include 路径中的斜杠 {-}
+
+If there is not a final `/` or `\` in the path, a `/` will be
+appended between the path and the included file name.
+
+如果路径末尾没有 `/` 或 `\` ，则路径与包含的文件名之间将追加一个 `/` 。
